@@ -1,0 +1,11 @@
+{
+  "name": "Perigee",
+  "author": "lutyjj",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["gamestream", "moonlight", "moonshine", "streaming"],
+    "description": "Mirrors the app libraries of paired Moonshine hosts into Steam as non-Steam shortcuts that launch Moonlight.",
+    "image": "https://opengraph.githubassets.com/1/lutyjj/perigee"
+  }
+}

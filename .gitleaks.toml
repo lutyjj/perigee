@@ -1,0 +1,14 @@
+# Secret-scanner configuration for `make secret-scan`. Start from the maintained
+# default rule set and carve out only what is provably not a credential.
+[extend]
+useDefault = true
+
+# The backend pairs with GameStream hosts over TLS, so its tests need a real
+# key pair and a real Moonlight.conf to parse. These are generated throwaways
+# that exist to be read by the test suite and grant access to nothing. Scoped to
+# the fixture directory and to the one rule they trip, so a genuine key
+# committed anywhere else still fails the scan.
+[[allowlists]]
+description = "Throwaway TLS material in the backend test fixtures"
+targetRules = ["private-key"]
+paths = ['''tests/fixtures/''']

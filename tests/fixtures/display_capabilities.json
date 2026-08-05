@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "detection": "detected",
+  "connector": "HDMI-A-1",
+  "max_refresh_hz": 120,
+  "modes": [
+    {
+      "width": 3840,
+      "height": 2160,
+      "refresh_hz": 60.0
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "refresh_hz": 119.998
+    }
+  ],
+  "reason": null
+}

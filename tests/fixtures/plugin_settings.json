@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "presentation_mode": "tabs",
+  "stream_settings": {
+    "resolution": "1920x1080",
+    "fps": 60,
+    "bitrate": 40,
+    "hdr": "off",
+    "performance-overlay": "on"
+  }
+}

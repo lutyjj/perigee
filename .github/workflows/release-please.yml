@@ -1,0 +1,45 @@
+name: Release Please
+
+# Maintains the release pull request from conventional commits: package.json is
+# the version owner, pyproject.toml follows via the x-release-please-version
+# annotation, and CHANGELOG.md is regenerated. Merging that PR tags vX.Y.Z and
+# opens a draft release; the chained publication run attaches the plugin zip and
+# publishes it. Chained rather than triggered, because a tag or release created
+# with GITHUB_TOKEN does not fire the events another workflow could listen for.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # With the default token, CI on the release pull request stalls at
+      # "action required" until a maintainer presses Approve and run, because a
+      # token cannot trigger workflows on a branch it pushed. Setting a
+      # RELEASE_PLEASE_TOKEN fine-grained PAT (contents + pull-requests write)
+      # makes the release PR check itself without the extra click.
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+  publish:
+    name: Publish
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}

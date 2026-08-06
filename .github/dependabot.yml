@@ -1,0 +1,62 @@
+# Every pin in this repository is a digest or an exact version. Without an updater
+# they rot silently, so registration here is part of adding one.
+#
+# Updates arrive grouped, one PR per ecosystem per tier: minor-and-patch is the
+# routine flow, majors are separate so one breaking bump cannot park every
+# harmless update behind a red group. An update dependabot cannot classify by
+# semver falls out of both groups and arrives individually, which is the safe
+# direction.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      majors:
+        patterns: ["*"]
+        update-types: [major]
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      majors:
+        patterns: ["*"]
+        update-types: [major]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      majors:
+        patterns: ["*"]
+        update-types: [major]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      majors:
+        patterns: ["*"]
+        update-types: [major]

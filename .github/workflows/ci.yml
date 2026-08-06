@@ -1,0 +1,51 @@
+name: CI
+
+# CI runs the same two make targets a maintainer runs locally. Every toolchain
+# lives in a digest-pinned container declared in the Makefile, so the runner
+# supplies nothing but Docker and make, and a green run here means the same
+# commands are green on a contributor's own machine.
+# On demand only: local `make check` is the same contract, so automatic runs on
+# every commit buy duplicate signal for real minutes. Dispatch it when a PR is
+# ready for its gate: gh workflow run ci.yml --ref <branch>
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Supersede in-flight runs on the same ref; the last push is the one that matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      # repo-check (metadata, version drift, actionlint, gitleaks) plus the
+      # backend and frontend gates.
+      - run: make check
+
+  build:
+    name: Plugin bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: make build
+      # The store rebuilds submissions from source, so the zip's layout is the
+      # only place a packaging mistake can be caught before a reviewer sees it.
+      - run: make bundle-check
+      # The release job builds its own zip from the tagged commit; this one
+      # exists so a pull request can be installed by hand before merging.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: perigee-${{ github.sha }}
+          path: out/perigee.zip
+          if-no-files-found: error
+          retention-days: 7

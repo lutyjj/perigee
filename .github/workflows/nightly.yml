@@ -1,0 +1,133 @@
+name: Nightly
+
+# The rolling development channel. Each run republishes a single pre-release
+# tagged `nightly`, re-pointed at the commit it was built from, so there is
+# always exactly one "latest development build" to install by URL.
+#
+# Versioned releases are a separate, on-demand channel and this workflow must
+# never interfere with them: `nightly` is not a vX.Y.Z tag, so release-please
+# ignores it when it works out the next version, and release.yml refuses any tag
+# that is not an exact vX.Y.Z. The release is marked pre-release and explicitly
+# not latest, so it can never shadow a real version on the releases page.
+#
+# Mechanics follow projects that run this pattern in production. Neovim
+# (neovim/neovim, .github/workflows/release.yml) is the canonical shape: a fixed
+# `nightly` tag, `--prerelease`, and `--target $GITHUB_SHA` to move the release
+# onto the new commit. Asset replacement follows Vencord's `devbuild` release
+# (Vendicated/Vencord, .github/workflows/build.yml), which clobbers assets on the
+# existing release rather than deleting and recreating it: no window in which
+# the download URL 404s, and no way for a failed run to leave the channel empty.
+# DuckStation (stenzek/duckstation) shows the same rolling tag guarded to one
+# branch so pull requests and forks never publish.
+#
+# On demand only: dispatch re-cuts the nightly from the current main without
+# inventing a commit. Run it after merges worth shipping to the channel.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nightly runs must not overlap: two runs racing on the same tag can leave the
+# release pointing at one commit while its asset came from another. Queue them
+# instead of cancelling, so every run publishes a coherent pair and the last one
+# to finish is the newest commit. Two dispatches in quick succession are enough
+# to hit this, so the guard does not depend on how the workflow is triggered.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    name: Publish nightly build
+    # Forks that pull main get the workflow but must not try to publish into
+    # their own repository, and have no token to do it with anyway.
+    if: ${{ !github.event.repository.fork }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      NIGHTLY_TAG: nightly
+      # Stable filename on purpose. Decky Loader's manual plugin install accepts
+      # a URL, so a fixed asset name makes
+      # releases/download/nightly/perigee-nightly.zip a permanent "give me the
+      # current development build" link. It also means --clobber replaces the
+      # asset in place, so old builds cannot pile up on the release the way a
+      # SHA-stamped filename would. Which commit a build came from is recorded
+      # in the release title and body instead, where it cannot be renamed away.
+      ASSET: perigee-nightly.zip
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # The same two targets CI runs on every pull request and release.yml runs
+      # at a tag. The Makefile is the shared build recipe; this workflow adds a
+      # publication step to it and nothing else.
+      - name: Build and verify the plugin bundle
+        run: |
+          make build
+          make bundle-check
+
+      # Renaming a verified artifact, not producing a second one: bundle-check
+      # has already passed on these exact bytes and the zip's internal layout
+      # (which is what the store cares about) is untouched by the file's name.
+      - name: Name the nightly asset
+        run: cp out/perigee.zip "out/$ASSET"
+
+      - name: Publish the rolling nightly pre-release
+        run: |
+          set -euo pipefail
+          short="$(git rev-parse --short HEAD)"
+          title="Nightly build ($short)"
+
+          # The release notes are markdown, so the backticks and dollar-free
+          # prose below are literal by design rather than shell expressions.
+          # shellcheck disable=SC2016
+          {
+            printf 'Rolling development build, re-cut from `main` on demand.\n\n'
+            printf 'Built from [`%s`](%s/%s/commit/%s) on %s.\n\n' \
+              "$short" "$GITHUB_SERVER_URL" "$GH_REPO" "$GITHUB_SHA" \
+              "$(date -u '+%Y-%m-%d %H:%M UTC')"
+            printf 'This is **not** a versioned release. It carries no stability promise and\n'
+            printf 'no version bump: `package.json` still reads whatever the last real release\n'
+            printf 'set. For a versioned build, use a `v*` release.\n\n'
+            printf "Install it through Decky Loader's **Manual plugin install** with:\n\n"
+            printf '    %s/%s/releases/download/%s/%s\n' \
+              "$GITHUB_SERVER_URL" "$GH_REPO" "$NIGHTLY_TAG" "$ASSET"
+          } > "$RUNNER_TEMP/notes.md"
+
+          # Moving the tag is what makes the channel roll. GitHub ignores a
+          # release's target once its tag ref exists, so the ref is repointed
+          # here rather than left to `gh release edit --target`.
+          if gh api "repos/$GH_REPO/git/refs/tags/$NIGHTLY_TAG" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/$NIGHTLY_TAG" \
+              -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          else
+            gh api -X POST "repos/$GH_REPO/git/refs" \
+              -f ref="refs/tags/$NIGHTLY_TAG" -f sha="$GITHUB_SHA" >/dev/null
+          fi
+
+          # Update in place when the channel already exists, so the release keeps
+          # its identity and its URL never stops resolving.
+          if gh release view "$NIGHTLY_TAG" >/dev/null 2>&1; then
+            gh release edit "$NIGHTLY_TAG" --target "$GITHUB_SHA" \
+              --title "$title" --notes-file "$RUNNER_TEMP/notes.md" \
+              --prerelease --latest=false
+            gh release upload "$NIGHTLY_TAG" "out/$ASSET" --clobber
+          else
+            gh release create "$NIGHTLY_TAG" "out/$ASSET" --target "$GITHUB_SHA" \
+              --title "$title" --notes-file "$RUNNER_TEMP/notes.md" \
+              --prerelease --latest=false
+          fi
+
+      - name: Summarise
+        run: |
+          {
+            printf '### Nightly published\n\n'
+            printf -- '- Commit: %s\n' "$(git rev-parse --short HEAD)"
+            printf -- '- Release: %s/%s/releases/tag/%s\n' \
+              "$GITHUB_SERVER_URL" "$GH_REPO" "$NIGHTLY_TAG"
+          } >> "$GITHUB_STEP_SUMMARY"

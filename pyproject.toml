@@ -1,6 +1,6 @@
 [project]
 name = "perigee"
-version = "0.1.0" # x-release-please-version
+version = "0.2.0" # x-release-please-version
 description = "Decky Loader backend that mirrors paired Moonshine hosts into Steam"
 requires-python = ">=3.11"
 dependencies = []

@@ -1,6 +1,6 @@
 {
   "name": "perigee",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mirrors the app libraries of paired Moonshine hosts into Steam as non-Steam shortcuts that launch Moonlight.",
   "packageManager": "pnpm@10.34.5",
   "type": "module",

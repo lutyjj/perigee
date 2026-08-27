@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/lutyjj/perigee/compare/v0.2.0...v0.2.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* preserve library scroll across tab renders ([6272c18](https://github.com/lutyjj/perigee/commit/6272c18874c0ceff80fc7c13bd63efd7ed480602))
+
 ## [0.2.0](https://github.com/lutyjj/perigee/compare/v0.1.0...v0.2.0) (2026-08-07)
 
 

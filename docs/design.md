@@ -308,10 +308,9 @@ Changing the mode stores the choice first and cleans up the old grouping afterwa
 Steam work that can fail or hang, and a setting held hostage to it is a setting that silently
 reverts.
 
-The pure half (which collections get a tab, titles, merge-without-duplicating, and reading the
-live dispatcher) is vitest-covered;
-`patch.ts`/`content.ts` need Steam's real React tree and are deliberately the only untestable
-modules: anchored, and failing toward fallback.
+Vitest covers the pure tab model, dispatcher lookup, and patch lifecycle. Steam's real React
+tree remains the owner-native test for content discovery and scroll-state preservation; those
+paths are anchored and fail toward fallback.
 
 ## Shortcut identity and launch shape
 

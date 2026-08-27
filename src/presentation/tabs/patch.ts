@@ -63,12 +63,18 @@ export class LibraryTabPatch {
         this.report(new AnchorMissing("outer-element"));
         return outer;
       }
+      let patchedMemoType: unknown;
       afterPatch(outer, "type", (_inner: unknown[], element: { type?: unknown } | null) => {
         if (element?.type === undefined) {
           this.report(new AnchorMissing("inner-element"));
           return element;
         }
-        this.patchMemo(element);
+        if (patchedMemoType === undefined) {
+          this.patchMemo(element);
+          patchedMemoType = element.type;
+        } else {
+          element.type = patchedMemoType;
+        }
         return element;
       });
       return outer;

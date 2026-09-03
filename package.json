@@ -25,7 +25,7 @@
     "@decky/ui": "^4.11.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
-    "rollup": "^4.62.5",
+    "rollup": "^4.63.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
